@@ -1,18 +1,19 @@
-# ListDB: a Key-Value Store for Byte-addressable Persistent Memory 
+# UnrolledSkipList: Transition from Fine-Grained SkipList to Coarse-Grained Block 
 
 ## Introduction
 
-ListDB is a key-value store for byte-addressable persistent memory, which consists of three novel techniques: 
-(i) byte-addressable Index-Unified Logging that incrementally converts write-ahead logs into SkipLists, 
-(ii) Braided SkipList, a simple NUMA-aware SkipList that effectively reduces the NUMA effects of NVMM, and 
-(iii) Zipper Compaction, which moves down the LSM-tree levels without copying key-value objects, but by merging SkipLists in place without blocking concurrent reads. 
-Using the three techniques, ListDB makes background compaction fast enough to resolve the infamous write stall problem and shows 1.6x and 25x higher write throughputs than PACTree and Intel Pmem-RocksDB, respectively.
-
-## Publication
-
-Wonbae Kim, Chanyeol Park, Dongui Kim, Hyeongjun Park, Young-ri Choi, Alan Sussman, Beomseok Nam,  
-ListDB: Union of Write-Ahead Logs and Persistent SkipLists for Incremental Checkpointing on Persistent Memory Authors
-16th USENIX Symposium on Operating Systems Design and Implementation (USENIX OSDI), CARLSBAD, CA, USA. July 11-13, 2022.
-
-Paper link: https://www.usenix.org/conference/osdi22/presentation/kim
-
+Most of byte-addressable key-value stores designed for NVMM
+leverage the in-place structural modification operations (SMOs)
+to insert, update, or delete keys through 8-byte pointer updates.
+While this in-place SMOs help mitigate the write amplification
+problem, excessive in-place updates lead to decreased spatial locality, resulting in degraded read performance. In this study, we propose UnrolledSkipList for NVMM as an intermediate layer between
+pointer-based SkipList and an array-based SSTables optimized for
+block devices. UnrolledSkipList is a variant of SkipList that manages
+multiple keys in a single node structure, combining the advantages
+of SkipList and array. UnrolledSkipList aims to absorb SkipList
+from DRAM into NVMM and quickly flush them as SSTables to a
+block device. We develop a key-value store - UnrolledListDB using
+UnrolledSkipList, which effectively reduces the amount of IOs by
+using fine-grained pointer-based SMOs, while improving locality
+by managing keys in array-based node structures. Through extensive performance study, we show that UnrolledListDB outperforms
+other state-of-the-art LSM trees by a large margin.
